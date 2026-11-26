@@ -227,19 +227,24 @@ def scene3(d, t):
     pose = dict(front_leg=(-10, 14), back_leg=(10, 12), front_arm=(-40, 70), back_arm=(36, 66),
                 head=-4, mouth="flat", brow=8, eyes="open")
     F.hero(d, x, GROUND, h, pose)
-    # red pressure overlay on the head
-    hx, hy = x, GROUND - h * 0.86
-    d.ellipse([P(hx - 92, hy - 96), P(hx + 92, hy + 96)], fill=(228, 90, 90, 70))
-    # rising droplets (fluid shift)
+    # red cheeks and nose drawn on top of the face
+    hx, hy = x, GROUND - h * 0.84
+    kk = h / 300.0
+    for cxs in (-1, 1):
+        F.circle(d, (hx + cxs * 26 * kk, hy + 14 * kk), 17 * kk, (230, 110, 100, 210), None, 0)
+    F.circle(d, (hx, hy + 2 * kk), 9 * kk, (226, 96, 92, 220), None, 0)
+    # rising droplets (fluid shift) with motion trails
     for i in range(7):
         ph = ((t - a) * 0.7 + i * 0.14) % 1.0
         dx = hx - 130 + i * 44
-        F.circle(d, (dx + 10 * math.sin(ph * 8 + i), hy + 60 - ph * 260), 12, (200, 90, 96), INK, 4)
+        dy = hy + 60 - ph * 260
+        d.line([P(dx + 10 * math.sin(ph * 8 + i), dy + 34), P(dx + 10 * math.sin(ph * 8 + i), dy + 12)],
+               fill=(*CORAL, 120), width=L(6))
+        F.circle(d, (dx + 10 * math.sin(ph * 8 + i), dy), 12, (200, 90, 96), INK, 4)
     # arrow + pressure badge
     ay = hy - 190
     d.line([P(hx + 150, ay + 90), P(hx + 150, ay - 40)], fill=CORAL, width=L(10))
     d.line([P(hx + 130, ay - 16), P(hx + 150, ay - 44), P(hx + 170, ay - 16)], fill=CORAL, width=L(10))
-    d.text(P(hx + 150, ay - 80), "ДАВЛЕНИЕ", font=font(28), fill=CORAL, anchor="mm")
     # heartbeat
     bx, by = 300, 700
     beat = 1 + 0.18 * math.sin(2 * math.pi * (t - a) * 2.0) ** 8
