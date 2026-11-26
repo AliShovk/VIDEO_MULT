@@ -17,3 +17,6 @@ preview/sm_*.png
 Thumbs.db
 .venv/
 venv/
+preview_loop.gif
+contact_sheet.jpg
+preview/*.png

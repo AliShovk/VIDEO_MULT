@@ -9,9 +9,9 @@
     "preset": "medium"
   },
   "timeline": {
-    "gap": 0.26,
+    "gap": 0.2,
     "min_duration": 25.0,
-    "tail": 2.0
+    "tail": 1.4
   },
   "voice": {
     "engine": "edge",
@@ -20,7 +20,7 @@
     "proxy": "http://127.0.0.1:10809",
     "piper_bin": "C:/Users/Ali PC/.local/bin/piper.exe",
     "piper_model": "C:/Users/Ali PC/chalkboard/piper-models/ru_RU-dmitri-medium.onnx",
-    "retries": 6
+    "retries": 8
   },
   "audio": {
     "voice_rms": 0.15,
@@ -32,19 +32,71 @@
     "lra": 9
   },
   "palette": {
-    "ink": [28, 34, 38],
-    "cream": [247, 233, 212],
-    "cream_d": [236, 218, 192],
-    "floor": [226, 203, 170],
-    "coral": [241, 106, 78],
-    "mustard": [244, 181, 65],
-    "teal": [47, 163, 155],
-    "teal_d": [36, 128, 122],
-    "sky": [191, 226, 236],
-    "white": [255, 250, 242],
-    "blue": [127, 200, 232],
-    "sand": [232, 199, 143],
-    "green": [58, 122, 92]
+    "ink": [
+      28,
+      34,
+      38
+    ],
+    "cream": [
+      247,
+      233,
+      212
+    ],
+    "cream_d": [
+      236,
+      218,
+      192
+    ],
+    "floor": [
+      226,
+      203,
+      170
+    ],
+    "coral": [
+      241,
+      106,
+      78
+    ],
+    "mustard": [
+      244,
+      181,
+      65
+    ],
+    "teal": [
+      47,
+      163,
+      155
+    ],
+    "teal_d": [
+      36,
+      128,
+      122
+    ],
+    "sky": [
+      191,
+      226,
+      236
+    ],
+    "white": [
+      255,
+      250,
+      242
+    ],
+    "blue": [
+      127,
+      200,
+      232
+    ],
+    "sand": [
+      232,
+      199,
+      143
+    ],
+    "green": [
+      58,
+      122,
+      92
+    ]
   },
   "fonts": {
     "bold": "C:/Windows/Fonts/segoeuib.ttf",

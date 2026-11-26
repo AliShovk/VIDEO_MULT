@@ -113,19 +113,19 @@ def poly(d, pts, fill, outline=INK, w=6, close=True):
         d.line(pp + [pp[0]] if close else pp, fill=outline, width=L(w), joint="curve")
 
 
-def capsule(d, p1, p2, w, fill, outline=INK, ow=6):
-    """Thick limb segment with round caps, ink outline."""
+def capsule(d, p1, p2, w, fill, outline=INK, ow=6, w2=None):
+    """Limb segment with round caps and an optional taper towards p2."""
     x1, y1 = p1
     x2, y2 = p2
-    r = w / 2
+    r1 = w / 2
+    r2 = (w2 if w2 is not None else w) / 2
     ang = math.atan2(y2 - y1, x2 - x1)
     nx, ny = -math.sin(ang), math.cos(ang)
-    quad = [(x1 + nx * r, y1 + ny * r), (x2 + nx * r, y2 + ny * r),
-            (x2 - nx * r, y2 - ny * r), (x1 - nx * r, y1 - ny * r)]
+    quad = [(x1 + nx * r1, y1 + ny * r1), (x2 + nx * r2, y2 + ny * r2),
+            (x2 - nx * r2, y2 - ny * r2), (x1 - nx * r1, y1 - ny * r1)]
     poly(d, quad, fill, outline, ow, close=True)
-    circle(d, p1, r, fill, outline, ow)
-    circle(d, p2, r, fill, outline, ow)
-    # cover the inner seams
+    circle(d, p1, r1, fill, outline, ow)
+    circle(d, p2, r2, fill, outline, ow)
     poly(d, quad, fill, None, 0, close=True)
 
 
@@ -167,8 +167,8 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
         p1 = (origin[0] + math.sin(a) * l0, origin[1] + math.cos(a) * l0)
         a2 = math.radians(a0 + a1)
         p2 = (p1[0] + math.sin(a2) * l1, p1[1] + math.cos(a2) * l1)
-        capsule(d, T(origin), T(p1), w * k, fill)
-        capsule(d, T(p1), T(p2), (w - 3) * k, fill)
+        capsule(d, T(origin), T(p1), w * k, fill, w2=(w - 4) * k)
+        capsule(d, T(p1), T(p2), (w - 4) * k, fill, w2=(w - 9) * k)
         return p2
 
     # ---- legs (back leg first, darker)
@@ -178,7 +178,7 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
     # ---- back arm
     b_arm = ang.get("back_arm", (8, 12))
     p_ba = limb((SH_X - 4, SH_Y + 6), b_arm[0], b_arm[1], UP_ARM, FORE_ARM, 24, TEAL_D)
-    circle(d, T(p_ba), 11 * k, SKIN_D)
+    _hand(d, T(p_ba), 11 * k, SKIN_D, mirrored=False)
 
     # ---- torso
     hipL, hipR = (-HIP_X, HIP_Y), (HIP_X, HIP_Y)
@@ -214,9 +214,21 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
     # ---- front arm
     f_arm = ang.get("front_arm", (-8, 10))
     p_fa = limb((-SH_X + 4, SH_Y + 6), f_arm[0], f_arm[1], UP_ARM, FORE_ARM, 25, TEAL)
-    circle(d, T(p_fa), 12 * k, SKIN)
+    _hand(d, T(p_fa), 12 * k, SKIN, mirrored=True)
     return {"hands": [T(p_ba), T(p_fa)], "head": T((hx, hy)),
             "waist": T((0, HIP_Y)), "feet": (x, y)}
+
+
+def _hand(d, p, r, fill, mirrored=False):
+    """Palm + thumb instead of a plain circle, so grips read at small sizes."""
+    x, y = p
+    rx, ry = r * 1.05, r * 1.25
+    d.ellipse([P(x - rx, y - ry), P(x + rx, y + ry)], fill=fill, outline=INK, width=L(5))
+    sx = 1 if mirrored else -1
+    d.line([P(x + sx * rx * 0.7, y - ry * 0.2), P(x + sx * rx * 1.5, y - ry * 0.9)],
+           fill=fill, width=max(2, L(r * 0.55)))
+    d.line([P(x + sx * rx * 0.7, y - ry * 0.2), P(x + sx * rx * 1.5, y - ry * 0.9)],
+           fill=INK, width=max(1, L(2)))
 
 
 SKIN = (243, 202, 162)
@@ -242,8 +254,17 @@ def _face(d, c, k, pose):
         line(d, [(x - ex - 5 * abs(k), y + ey), (x - ex + 5 * abs(k), y + ey)], INK, 4.5)
         line(d, [(x + ex - 5 * abs(k), y + ey), (x + ex + 5 * abs(k), y + ey)], INK, 4.5)
     else:
-        circle(d, (x - ex, y + ey), 5.4 * abs(k), INK, None, 0)
-        circle(d, (x + ex, y + ey), 5.4 * abs(k), INK, None, 0)
+        er = 8.2 * abs(k)
+        look = pose.get("look", 0) * abs(k)
+        for sx in (-1, 1):
+            cx = x + sx * ex
+            d.ellipse([P(cx - er, y + ey - er * 1.15), P(cx + er, y + ey + er * 1.15)],
+                      fill=WHITE, outline=INK, width=L(3))
+            d.ellipse([P(cx - er * 0.55 + look, y + ey - er * 0.55), P(cx + er * 0.55 + look, y + ey + er * 0.55)],
+                      fill=INK, outline=None, width=0)
+            d.ellipse([P(cx - er * 0.55 + look - er * 0.22, y + ey - er * 0.4),
+                       P(cx - er * 0.55 + look + er * 0.05, y + ey - er * 0.12)],
+                      fill=WHITE, outline=None, width=0)
     b = pose.get("brow", 0)
     line(d, [(x - ex - 8 * abs(k), y + ey - (12 + b) * abs(k)), (x - ex + 6 * abs(k), y + ey - (9 + b * 0.4) * abs(k))], INK, 4.5)
     line(d, [(x + ex - 6 * abs(k), y + ey - (9 + b * 0.4) * abs(k)), (x + ex + 8 * abs(k), y + ey - (12 + b) * abs(k))], INK, 4.5)
@@ -416,3 +437,21 @@ def scene_span(i, pad=0.18):
 
 
 SCENES = [scene_span(i) for i in range(len(T))]
+
+
+# ------------------------------------------------------------------ grain
+_GRAIN = {}
+
+
+def grain(img_rgb, seed=0, amount=0.35):
+    """Film grain so flat fills do not look like plastic."""
+    import numpy as np
+    if seed not in _GRAIN:
+        rng = np.random.default_rng(100 + seed)
+        _GRAIN[seed] = rng.normal(0, 11, (H // 4, W // 4, 1)).astype(np.float32)
+    g = _GRAIN[seed]
+    small = Image.fromarray(np.repeat(np.clip(g + 128, 0, 255).astype(np.uint8), 3, axis=2))
+    big = small.resize(img_rgb.size, Image.NEAREST)
+    a = np.asarray(img_rgb).astype(np.float32)
+    b = np.asarray(big).astype(np.float32) - 128.0
+    return Image.fromarray(np.clip(a + b * amount, 0, 255).astype(np.uint8))

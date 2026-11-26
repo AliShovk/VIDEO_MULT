@@ -13,6 +13,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
@@ -56,7 +57,7 @@ async def edge_line(text, dst, voice, rate, retries):
             print(f"    retry {k}: {type(e).__name__}")
         if os.path.exists(dst) and os.path.getsize(dst) > 4000 and duration(dst) > 0.4:
             return duration(dst)
-        await asyncio.sleep(1.0 + 1.5 * k)
+        await asyncio.sleep(1.5 + 2.0 * k)
     raise RuntimeError("no audio received: " + text[:40])
 
 
@@ -83,6 +84,7 @@ def main():
             d = to_wav(mp3, wav)
             os.remove(mp3)
         meta.append({"id": i, "text": text, "file": wav, "dur": round(d, 3)})
+        time.sleep(0.8)
         print(f"{i}: {d:5.2f}s  {text[:50]}")
     json.dump(meta, open(os.path.join(args.out, "lines.json"), "w", encoding="utf-8"),
               ensure_ascii=False, indent=1)
