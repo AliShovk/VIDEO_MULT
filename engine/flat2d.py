@@ -49,6 +49,11 @@ def font(size, bold=True):
     return _fonts[key]
 
 
+def shade(c, k=0.84):
+    """One flat shadow tone for a material (no gradients, flat-vector style)."""
+    return tuple(max(0, min(255, int(v * k))) for v in c[:3])
+
+
 def clamp(x, a=0.0, b=1.0):
     return a if x < a else b if x > b else x
 
@@ -113,10 +118,14 @@ def poly(d, pts, fill, outline=INK, w=6, close=True):
         d.line(pp + [pp[0]] if close else pp, fill=outline, width=L(w), joint="curve")
 
 
-def capsule(d, p1, p2, w, fill, outline=INK, ow=6, w2=None):
-    """Limb segment with round caps and an optional taper towards p2."""
+def capsule(d, p1, p2, w, fill, outline=INK, ow=6, w2=None, flat_shadow=False):
+    """Limb segment with round caps, optional taper and a flat shadow bevel."""
     x1, y1 = p1
     x2, y2 = p2
+    if flat_shadow:
+        ox, oy = 0.10 * w, 0.12 * w
+        capsule(d, (x1 + ox, y1 + oy), (x2 + ox, y2 + oy), w, shade(fill),
+                None, 0, w2=w2)
     r1 = w / 2
     r2 = (w2 if w2 is not None else w) / 2
     ang = math.atan2(y2 - y1, x2 - x1)
@@ -167,8 +176,8 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
         p1 = (origin[0] + math.sin(a) * l0, origin[1] + math.cos(a) * l0)
         a2 = math.radians(a0 + a1)
         p2 = (p1[0] + math.sin(a2) * l1, p1[1] + math.cos(a2) * l1)
-        capsule(d, T(origin), T(p1), w * k, fill, w2=(w - 4) * k)
-        capsule(d, T(p1), T(p2), (w - 4) * k, fill, w2=(w - 9) * k)
+        capsule(d, T(origin), T(p1), w * k, fill, w2=(w - 4) * k, flat_shadow=True)
+        capsule(d, T(p1), T(p2), (w - 4) * k, fill, w2=(w - 9) * k, flat_shadow=True)
         return p2
 
     # ---- legs (back leg first, darker)
@@ -176,15 +185,23 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
     p_back = limb((HIP_X, HIP_Y - 4), back_leg[0], back_leg[1], THIGH, SHIN, 27, (SKIN_D))
     _shoe(d, T(p_back), k, flip, shade=True)
     # ---- back arm
+    circle(d, T((SH_X - 2, SH_Y + 8)), 14 * k, TEAL_D, INK, 5)
     b_arm = ang.get("back_arm", (8, 12))
     p_ba = limb((SH_X - 4, SH_Y + 6), b_arm[0], b_arm[1], UP_ARM, FORE_ARM, 24, TEAL_D)
     _hand(d, T(p_ba), 11 * k, SKIN_D, mirrored=False)
+
+    # ---- neck (behind the torso and the collar)
+    hx0, hy0 = rot((0, HEAD_Y), lean + ang.get("head", 0), (0, SH_Y))
+    d.polygon([P(x + (hx0 - 15) * k, y + (hy0 + 30) * k), P(x + (hx0 + 15) * k, y + (hy0 + 30) * k),
+               P(x + (hx0 + 17) * k, y + (SH_Y + 6) * k), P(x + (hx0 - 17) * k, y + (SH_Y + 6) * k)],
+              fill=shade(SKIN), outline=INK, width=L(5))
 
     # ---- torso
     hipL, hipR = (-HIP_X, HIP_Y), (HIP_X, HIP_Y)
     shL, shR = (-SH_X, SH_Y), (SH_X, SH_Y)
     torso = [hipL, shL, (0, SH_Y - 16), shR, hipR]
     torso = [rot(p, lean) for p in torso]
+    poly(d, [T((p[0] + 4, p[1] + 5)) for p in torso], shade(MUSTARD), None, 0)
     poly(d, [T(p) for p in torso], MUSTARD, INK, 6)
     # shirt detail: collar + pocket
     collar = [rot(p, lean) for p in [(-14, SH_Y - 6), (0, SH_Y + 18), (14, SH_Y - 6)]]
@@ -196,6 +213,9 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
     # ---- front leg
     f_leg = ang.get("front_leg", (-4, 6))
     p_front = limb((-HIP_X, HIP_Y), f_leg[0], f_leg[1], THIGH, SHIN, 28, SKIN)
+    kx = -HIP_X + math.sin(math.radians(f_leg[0])) * THIGH * 1.0
+    ky = HIP_Y + math.cos(math.radians(f_leg[0])) * THIGH * 1.0
+    circle(d, T((kx, ky)), 12 * k, SKIN, INK, 4)
     _shoe(d, T(p_front), k, flip)
 
     # ---- head
@@ -204,6 +224,8 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
     hx += 0
     d.rectangle([P(x + (-13) * k, y + (hy + 30) * k), P(x + 13 * k, y + (SH_Y + 8) * k)],
                 fill=SKIN_D, outline=INK, width=L(5))
+    circle(d, T((hx - 45, hy + 7)), 9 * k, shade(SKIN), INK, 4)
+    circle(d, T((hx + 5, hy + 6)), 41 * k, shade(SKIN), None, 0)
     circle(d, T((hx, hy + 2)), 43 * k, SKIN, INK, 6)
     # hair: flat cap shape
     hair = [(hx - 44, hy - 6), (hx - 34, hy - 40), (hx + 34, hy - 40), (hx + 44, hy - 6),
@@ -211,6 +233,8 @@ def hero(d, x, y, h, pose, flip=False, alpha=255):
     poly(d, [T(p) for p in hair], (54, 44, 40), INK, 6)
     _face(d, T((hx, hy)), abs(k), ang)
 
+    # shoulder cap so the sleeve meets the body
+    circle(d, T((-SH_X + 2, SH_Y + 8)), 15 * k, TEAL, INK, 5)
     # ---- front arm
     f_arm = ang.get("front_arm", (-8, 10))
     p_fa = limb((-SH_X + 4, SH_Y + 6), f_arm[0], f_arm[1], UP_ARM, FORE_ARM, 25, TEAL)
@@ -239,7 +263,7 @@ def _shoe(d, p, k, flip, shade=False):
     x, y = p
     w, h = 30 * k, 15 * k
     box = [x - w * 0.5, y - h * 0.5, x + w * 0.62, y + h * 0.5]
-    rrect(d, box, 6 * k, (92, 74, 66) if shade else (58, 46, 42), INK, 5)
+    rrect(d, box, 6 * k, (120, 98, 88) if shade else (86, 68, 60), INK, 5)
     d.line([P(box[0] + w * 0.06, y + h * 0.34), P(box[2] - w * 0.06, y + h * 0.34)],
            (232, 226, 214), max(1, L(3)))
 
